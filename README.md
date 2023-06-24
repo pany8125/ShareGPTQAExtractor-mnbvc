@@ -130,3 +130,4 @@ python ShareGPT_extract.py FILE1 FILE2 ... -o ShareGPT
 ## 相关项目
 
 [MNBVC](https://github.com/esbatmop/MNBVC)
+[WikiHowQAExtractor-mnbvc](https://github.com/wanicca/WikiHowQAExtractor-mnbvc)
