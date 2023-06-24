@@ -6,7 +6,7 @@
 1. https://huggingface.co/datasets/cryscan/multilingual-share
 2. https://huggingface.co/datasets/anon8231489123/ShareGPT_Vicuna_unfiltered
 3. https://huggingface.co/datasets/Ejafa/GPT_4_with_ShareGPT/tree/main
-- 处理结果为jsonl文件，每行对应一个词条页面，包含问答文本，以及可供参考的词条结构，详细格式附后。
+- 处理结果为jsonl文件，每行对应一对问答，包含问答文本，以及同一会话下多轮问答的唯一标识和序号，详细格式附后。
 
 ## 环境
 
@@ -35,8 +35,8 @@ python ShareGPT_extract.py FILE1 FILE2 ... -o ShareGPT
 
 ## 代码说明
 
-- `wikihow_extract.py` 入口程序
-- `wikihow_parser.py` ShareGPT解析器
+- `sharegpt_extract.py` 入口程序
+- `sharegpt_parser.py` ShareGPT解析器
 
 
 ## 输出jsonl文件格式
@@ -51,8 +51,8 @@ python ShareGPT_extract.py FILE1 FILE2 ... -o ShareGPT
     "来源":"ShareGPT",
     "元数据":{
         "create_time":"20230511 15:56:03",
-        "问题明细":"",
-        "回答明细":"",
+        "问题明细":"\"from\": \"human\"",
+        "回答明细":"\"from\": \"gpt\"",
         "扩展字段":""
     }
 }
@@ -60,8 +60,8 @@ python ShareGPT_extract.py FILE1 FILE2 ... -o ShareGPT
 3. 在ShareGPT语料中，`"扩展字段"`一共两个字段，会话的唯一标识和本条在会话中的序号，示例如下：
 ```json
     {
-    "会话标识": "yOKd88p",
-    "会话序号": 1
+    "会话": "yOKd88p",
+    "多轮序号": 1
     }
 ```
 
@@ -102,11 +102,11 @@ python ShareGPT_extract.py FILE1 FILE2 ... -o ShareGPT
     "来源": "ShareGPT",
     "元数据": {
         "create_time": "20230517 10:41:58",
-        "回答明细": "",
-        "问题明细": "",
+        "问题明细":"\"from\": \"human\"",
+        "回答明细":"\"from\": \"gpt\"",
         "扩展字段": {
-                    "会话标识": "yOKd88p",
-                    "会话序号": 1
+                    "会话": "yOKd88p",
+                    "多轮序号": 1
                     }
     }
 },
@@ -117,11 +117,11 @@ python ShareGPT_extract.py FILE1 FILE2 ... -o ShareGPT
     "来源": "ShareGPT",
     "元数据": {
         "create_time": "20230517 10:41:58",
-        "回答明细": "",
-        "问题明细": "",
+        "问题明细":"\"from\": \"human\"",
+        "回答明细":"\"from\": \"gpt\"",
         "扩展字段": {
-                    "会话标识": "yOKd88p",
-                    "会话序号": 2
+                    "会话": "yOKd88p",
+                    "多轮序号": 2
                     }
     }
 },
