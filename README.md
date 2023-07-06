@@ -109,7 +109,7 @@ python ShareGPT_extract.py FILE1 FILE2 ... -o ShareGPT
                     "多轮序号": 1
                     }
     }
-},
+}
 {
     "id": 1,
     "问": "Can you change Mary\u2019s name to Katy",
@@ -125,6 +125,12 @@ python ShareGPT_extract.py FILE1 FILE2 ... -o ShareGPT
                     }
     }
 },
+```
+
+**补充说明：上面的格式方便查看，最终输出到文件仍然为jsonl的规范，如下：**
+```json
+{"id": 0, "问": "Can you make me a ...", "答": "Sure...", "来源": "ShareGPT", "元数据": {"create_time": "20230517 10:41:58",...}}
+{"id": 0, "问": "Can you make me a ...", "答": "Sure...", "来源": "ShareGPT", "元数据": {"create_time": "20230517 10:41:58",...}}
 ```
 
 ## 相关项目
