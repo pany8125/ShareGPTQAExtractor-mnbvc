@@ -31,8 +31,6 @@ class ShareGPTQASchema:
         }
         return json.dumps(data, separators=(",", ":"), ensure_ascii=False)
 
-script = ShareGPTQASchema(0, "Can you make me a Shakespearean script about a girl who has tummy troubles and can't fart not matter how hard she tries- so they think she is a witch",
-                "Sure, here's a Shakespearean script about a girl who c...", "ShareGPT", 1)
-
-json_str = script.to_json()
+json_str = ShareGPTQASchema(0, "Can you make me a Shakespearean script about a girl who has tummy troubles and can't fart not matter how hard she tries- so they think she is a witch",
+                "Sure, here's a Shakespearean script about a girl who c...", "ShareGPT", 1).to_json()
 print(json_str)
