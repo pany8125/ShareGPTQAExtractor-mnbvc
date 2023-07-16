@@ -22,12 +22,12 @@ pip install -r requirements.txt
 
 ## 用法
 
-通过以下命令将FILE1 FILE2 等输入HTML文件转化并输出到以`ShareGPT`为名称的结果文件中。
+通过以下命令将FILE文件转化并输出到以`ShareGPT`为名称的结果文件中。
 ```shell
-python sharegpt_extract.py FILE1 FILE2 ... -o ShareGPT
+python sharegpt_extract.py FILE
 ```
 
-以上两种命令将会输出结果文件`ShareGPT.0.jsonl`，当结果文件大于件500MB时会分块处理，产生`ShareGPT.1.jsonl`、`ShareGPT.2.jsonl`等。
+以上命令将输出时间戳结果文件例子`shareGPT_2023-07-17-00-30-43.jsonl`。
 
 ## 注意
 
