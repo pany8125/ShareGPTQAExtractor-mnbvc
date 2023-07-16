@@ -1,101 +1,150 @@
-#%%
-from wikihow_parser import Article
-import json,traceback,csv,time
-from tqdm.auto import tqdm
-#%%
+# 脚本设置使用utf-8编码
+# -*- coding: utf-8 -*-
 
-#scheme
-ID = "编号"
-Q = "问"
-A = "答"
-ANSWER = "回答"
-META = "元数据"
-A_SUM = "简要回答"
-# PREV = "前承"
-# NEXT = "后续"
-A_STRUCT = "结构"
-METHOD = "方法"
-STEP = "步骤"
-NUMBER = "编号"
-TIPS = "小提示"
-WARN = "注意事项"
-TITLE = "标题"
-DESC = "描述"
+from datetime import datetime
+import json
+from enum import Enum
+import schema
 
+# 定义一个枚举类
+class Json_str(Enum):
+    JSON_START = "{"
+    ID = '"id":'
+    CONVERSATION_START = '"conversations":'
+    CONVERSATION_END = ']'
+    JSON_END = '},'
+    JSON_END_END = '}'
+    NONE = ''
 
-def process_page(page):
-    article = Article(page)
-    title = article.title
-    answer_sum = article.intro
-    answer_struct = {}
-    answer = ""
-    answer_struct[METHOD] = []
-    for method in article.methods:
-        method_title = method.title.partition(':')[-1] if (':') in method.title else method.title
-        method_title = method_title.strip()
-        answer += f"{method.number}. {method_title}\n"
-        method_struct = {NUMBER:method.number,TITLE:method_title,STEP:[]}
-        for step in method.steps:
-            answer += f"{method.number}-{step.number}. {step.title}\n" if len(method.steps) > 1 else f"{step.title}\n"
-            description = step.description.replace('\n\n','\n').replace('\t',"")
-            answer += f"{description}\n"
-            method_struct[STEP].append({NUMBER:step.number,TITLE:step.title.strip(), DESC:description.strip()})
-        answer_struct[METHOD].append(method_struct)
-    if article.tips and article.tips['tips']:
-        answer+=article.tips['title'].strip()+'\n'
-        for tip in article.tips['tips']:
-            answer+=tip.replace("\t","").strip() + '\n'
-        method_struct[TIPS] = [tip.replace("\t","").strip()+"\n" for tip in article.tips['tips']]
-    if article.warnings and article.warnings['warnings']:
-        answer+=article.warnings['title'].strip()+'\n'
-        for warn in article.warnings['warnings']:
-            answer+=warn.replace("\t","").strip() + '\n'
-        method_struct[WARN] = [warn.replace("\t","").strip() + '\n' for warn in article.warnings['warnings']]
-    # result = {Q:title,A:[{A:answer,A_SUM:answer_sum,A_STRUCT:answer_struct}],}
-    #  问答语料组的格式：{"文件名":"xxx.txt","目录":"20230199","分类":"数学题","内容":[{"Q":"1加1等于几","A":"等于2"},{"Q":"2减1等于几","A":"1"}]}
-    result = {Q:title,A:answer,META:{"create_time":time.strftime('%Y%m%d %H:%M:%S'),"回答明细":{ANSWER:answer,A_SUM:answer_sum,A_STRUCT:answer_struct}}}
-    return result
-# %%
+# 读取文件
+# file_path_all = 'final_data_sample_230706test.json'  # 替换为实际文件路径
+
+# 获取每一段对话，输入到json中处理
+def process_json_file(file_path, write_file, start_line=1):
+    with open(file_path, 'r') as f:
+        # 定位到指定行数
+        for _ in range(start_line - 1):
+            f.readline()
+        buffer = ""
+        json_len = 0
+        json_str_flag = Json_str.NONE.value # 检测到json串时修改为对应状态，检测完成修改回NONE
+        for line_number, line in enumerate(f, start=start_line):
+            # 打印迭代信息
+            # print(f"Line {line_number}: {line}")
+            # 如果json_len大于10，就退出
+            if json_len > 10:
+                break
+            this_line = line.strip()
+            if json_str_flag == Json_str.NONE.value:
+                if this_line == "[":
+                    print(f"Line {line_number}, start of text!")  # json检测文件开始
+                    continue
+                elif this_line == "]":
+                    print(f"Line {line_number}, end of text!")  # json检测还没开始就到末尾了
+                    break 
+                elif this_line != "{":
+                    print(f"Line {line_number}, error!")  # json检测失败
+                    break
+                elif this_line == Json_str.JSON_START.value:
+                    print(f"Line {line_number}, start parsing json!")  # json解析开始
+                    json_str_flag = Json_str.JSON_START.value
+                    buffer += this_line
+                    continue
+                else:
+                    print(f"Line {line_number}, error!")  # json检测失败
+                    print(f"parse stage: {json_str_flag}, json str: {buffer}")
+                    break
+            if json_str_flag == Json_str.JSON_START.value:
+                if this_line.startswith(Json_str.ID.value):
+                    print(f"Line {line_number}, id detected!")  # json解析开始
+                    json_str_flag = Json_str.ID.value
+                    buffer += this_line
+                    continue
+                else:
+                    print(f"Line {line_number}, error!")  # json检测失败
+                    print(f"parse stage: {json_str_flag}, json str: {buffer}")
+                    break
+            if json_str_flag == Json_str.ID.value:
+                if this_line.startswith(Json_str.CONVERSATION_START.value):
+                    print(f"Line {line_number}, conversations detected!")  # json解析开始
+                    json_str_flag = Json_str.CONVERSATION_START.value
+                    buffer += this_line
+                    continue
+                else:
+                    print(f"Line {line_number}, error!")  # json检测失败
+                    print(f"parse stage: {json_str_flag}, json str: {buffer}")
+                    break
+            if json_str_flag == Json_str.CONVERSATION_START.value:
+                if this_line == Json_str.CONVERSATION_END.value:
+                    print(f"Line {line_number}, conversations end!")  
+                    json_str_flag = Json_str.CONVERSATION_END.value
+                    buffer += this_line
+                    continue
+                else:
+                    print(f"Line {line_number}, conversations parsing!")
+                    # TODO：检测下buffer长度，以免数据异常
+                    buffer += this_line
+                    continue
+            if json_str_flag == Json_str.CONVERSATION_END.value:
+                if this_line == Json_str.JSON_END.value or this_line == Json_str.JSON_END_END.value:
+                    print(f"Line {line_number}, json end!")  # json解析开始
+                    json_str_flag = Json_str.NONE.value
+                    buffer += '}'
+                    if process_json(buffer, write_file):
+                        buffer = ''
+                        json_len += 1
+                        continue
+                    else:
+                        print(f"Line {line_number}, error!")  # json检测失败
+                        print(f"parse stage: {json_str_flag}, json str: {buffer}")
+                        break
+                else:
+                    print(f"Line {line_number}, error!")  # json检测失败
+                    print(f"parse stage: {json_str_flag}, json str: {buffer}")
+                    break
+            # 撒分支都没走进去
+            print(f"Line {line_number}, error!")  # json检测失败
+            print(f"parse stage: {json_str_flag}, json str: {buffer}")
+
+def process_json(json_str, write_file=None):
+    # Check if str is a valid JSON
+    try:
+        json_data = json.loads(json_str)
+        id = json_data['id']
+        conversation = json_data['conversations']
+        # 打印conversation的长度，并加上说明
+        print(f"conversation length: {len(conversation)}")
+        # 判断conversation的长度是否为偶数，如果是奇数，就退出
+        if(len(conversation) % 2 != 0):
+            return False
+        for i in range(int(len(conversation)/2)):
+            # 如果是第一个元素，就是问题
+            if(conversation[i*2]['from'] != 'human'):
+                return False
+            # 如果是第二个元素，就是答案
+            if(conversation[i*2+1]['from'] != 'gpt'):
+                return False
+            # 如果是第一个元素，就是问题
+            question = conversation[i*2]['value']
+            # 如果是第二个元素，就是答案
+            answer = conversation[i*2+1]['value']
+            # 生成json
+            json_str = schema.ShareGPTQASchema(id, question, answer, id, i).to_json()
+            write_file.write(json_str)
+            write_file.write('\n')
+        return True
+    except json.JSONDecodeError:
+        print("JSONDecodeError")
+        return False
+
 if __name__ == "__main__":
     import argparse
-    parser = argparse.ArgumentParser(description="Parse wikihow page into QA data.")
-    parser.add_argument("source_files",type=str, nargs="*",help="source html files",default=[])
-    parser.add_argument("-c","--csv",type=str,default=None,help="Crawled CSV files")
-    parser.add_argument("-o","--output",type=str,default="wikihow",help="output file name (without extension)")
-    parser.add_argument("-m","--max_size",type=int,default=500 * 1024 * 1024,help="max chunk size")
+    parser = argparse.ArgumentParser(description="Parse shareGPT into QA data.")
+    parser.add_argument("source_files",type=str, help="文件名")
+    parser.add_argument("-o","--output",type=str, default="shareGPT",help="output file name (without extension)")
+    parser.add_argument("-l","--start_line",type=int,default=1,help="read start line")
     args = parser.parse_args()
-    chunk_counter = 0
-    of = open(f"{args.output}.{chunk_counter}.jsonl",'w')
-
-    for filepath in tqdm(args.source_files):
-        with open(filepath) as f:
-            try:
-                result = {"id":i}
-                result.update(process_page(d['html']))
-            except Exception as e:
-                traceback.print_exc()
-                print("Failed to process", filepath)
-                continue
-            print(json.dumps(result,ensure_ascii=False),file=of)
-            if of.tell() > args.max_size:
-                of.close()
-                chunk_counter+=1
-                of = open(f"{args.output}.{chunk_counter}.jsonl",'w')
-    if args.csv:
-        csv.field_size_limit(100000000)
-        with open(args.csv,'r',newline="") as f:
-            reader = csv.DictReader(f)
-            for i,d in enumerate(tqdm(reader)):
-                try:
-                    result = {"id":i}
-                    result.update(process_page(d['html']))
-                except Exception as e:
-                    traceback.print_exc()
-                    print("Failed to process csv index",i,d["_id"])
-                    continue        
-                print(json.dumps(result,ensure_ascii=False),file=of)
-                if of.tell() > args.max_size:
-                    of.close()
-                    chunk_counter+=1
-                    of = open(f"{args.output}.{chunk_counter}.jsonl",'w')
-    print("Done")
+    of = open(f'{args.output}_{datetime.now().strftime("%Y-%m-%d-%H-%M-%S")}.jsonl','w')
+    # 调用函数来处理 JSON 文件，默认从第1行开始读取
+    process_json_file(args.source_files, of, args.start_line)
+    of.close()
