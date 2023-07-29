@@ -1,10 +1,11 @@
-# 脚本设置使用utf-8编码
 # -*- coding: utf-8 -*-
+# 脚本设置使用utf-8编码
 
 from datetime import datetime
 import json
 from enum import Enum
 import schema
+import re
 
 # 定义一个枚举类
 class Json_str(Enum):
@@ -21,7 +22,7 @@ class Json_str(Enum):
 
 # 获取每一段对话，输入到json中处理
 def process_json_file(file_path, write_file, start_line=1):
-    with open(file_path, 'r') as f:
+    with open(file_path, 'r', encoding='utf-8') as f:
         # 定位到指定行数
         for _ in range(start_line - 1):
             f.readline()
@@ -128,8 +129,14 @@ def process_json(json_str, write_file=None):
             question = conversation[i*2]['value']
             # 如果是第二个元素，就是答案
             answer = conversation[i*2+1]['value']
+            lang = 'not_en_or_zh'
+            # 确认是否英文或中文，可能带有标点符号
+            if re.match(r'^[a-zA-Z0-9\.\,\?\!\s]+$', question) is not None:
+                lang = 'en'
+            elif re.match(r'^[\u4e00-\u9fa5\.\,\?\!\s]+$', question) is not None:
+                lang = 'zh'
             # 生成json
-            json_str = schema.ShareGPTQASchema(id, question, answer, id, i).to_json()
+            json_str = schema.ShareGPTQASchema(id, question, answer, id, i+1, lang).to_json()
             write_file.write(json_str)
             write_file.write('\n')
         return True
@@ -140,11 +147,10 @@ def process_json(json_str, write_file=None):
 if __name__ == "__main__":
     import argparse
     parser = argparse.ArgumentParser(description="Parse shareGPT into QA data.")
-    parser.add_argument("source_files",type=str, help="文件名")
+    parser.add_argument("source_files",type=str, default="final_data_sample_230706test.json", help="文件名")
     parser.add_argument("-o","--output",type=str, default="shareGPT",help="output file name (without extension)")
     parser.add_argument("-l","--start_line",type=int,default=1,help="read start line")
     args = parser.parse_args()
-    of = open(f'{args.output}_{datetime.now().strftime("%Y-%m-%d-%H-%M-%S")}.jsonl','w')
-    # 调用函数来处理 JSON 文件，默认从第1行开始读取
-    process_json_file(args.source_files, of, args.start_line)
-    of.close()
+    with open(f'{args.output}_{datetime.now().strftime("%Y-%m-%d-%H-%M-%S")}.jsonl', 'w', encoding='utf-8') as of:
+        # 调用函数来处理 JSON 文件，默认从第1行开始读取
+        process_json_file(args.source_files, of, args.start_line)
