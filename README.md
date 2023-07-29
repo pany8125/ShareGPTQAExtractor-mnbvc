@@ -6,6 +6,7 @@
 1. https://huggingface.co/datasets/cryscan/multilingual-share
 2. https://huggingface.co/datasets/anon8231489123/ShareGPT_Vicuna_unfiltered
 3. https://huggingface.co/datasets/Ejafa/GPT_4_with_ShareGPT/tree/main
+4. https://huggingface.co/datasets/shareAI/ShareGPT-Chinese-English-90k/tree/main/sharegpt_jsonl
 - 处理结果为jsonl文件，每行对应一对问答，包含问答文本，以及同一会话下多轮问答的唯一标识和序号，详细格式附后。
 
 ## 环境
