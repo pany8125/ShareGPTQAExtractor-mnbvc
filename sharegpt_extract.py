@@ -33,7 +33,8 @@ def process_json_file(file_path, write_file, start_line=1):
             # 打印迭代信息
             # print(f"Line {line_number}: {line}")
             # 如果json_len大于10，就退出
-            if json_len > 10:
+            if json_len > 100:
+                print(f"Line {line_number}, json len > 100, exit!")  # json检测失败
                 break
             this_line = line.strip()
             if json_str_flag == Json_str.NONE.value:
@@ -104,6 +105,7 @@ def process_json_file(file_path, write_file, start_line=1):
                     print(f"parse stage: {json_str_flag}, json str: {buffer}")
                     break
             # 撒分支都没走进去
+            print(f"json parse error!")  # json检测失败
             print(f"Line {line_number}, error!")  # json检测失败
             print(f"parse stage: {json_str_flag}, json str: {buffer}")
 
@@ -115,42 +117,117 @@ def process_json(json_str, write_file=None):
         conversation = json_data['conversations']
         # 打印conversation的长度，并加上说明
         print(f"conversation length: {len(conversation)}")
-        # 判断conversation的长度是否为偶数，如果是奇数，就退出
-        if(len(conversation) % 2 != 0):
-            return False
-        for i in range(int(len(conversation)/2)):
-            # 如果是第一个元素，就是问题
-            if(conversation[i*2]['from'] != 'human'):
+        # 标识conversation中的对话数以及开始标记
+        i = 1
+        conversation_start = False
+        question = ''
+        # 循环处理conversation中的每一个json，如果json中的from不是human或gpt，就退出
+        while len(conversation) > 0:
+            if conversation[0]['from'] != 'human' and conversation[0]['from'] != 'gpt':
                 return False
-            # 如果是第二个元素，就是答案
-            if(conversation[i*2+1]['from'] != 'gpt'):
-                return False
-            # 如果是第一个元素，就是问题
-            question = conversation[i*2]['value']
-            # 如果是第二个元素，就是答案
-            answer = conversation[i*2+1]['value']
-            lang = 'not_en_or_zh'
-            # 确认是否英文或中文，可能带有标点符号
-            if re.match(r'^[a-zA-Z0-9\.\,\?\!\s]+$', question) is not None:
-                lang = 'en'
-            elif re.match(r'^[\u4e00-\u9fa5\.\,\?\!\s]+$', question) is not None:
-                lang = 'zh'
+            q_or_a = conversation.pop(0)
+            if q_or_a['from'] == 'gpt':
+                # 如果是gpt，且前面没有human，就丢弃
+                if conversation_start == False:
+                    continue
+                # 如果是gpt，且前面有human，就生成json
+                else:
+                    answer = q_or_a['value']
+                    # 生成json
+                    json_str = schema.ShareGPTQASchema(id, question, answer, id, i).to_json()
+                    write_file.write(json_str)
+                    write_file.write('\n')
+                    # 对话重置且问答序号加1
+                    conversation_start = False
+                    i += 1
+                    continue
+            # 如果是human，分两种情况。如果前面也是human，先将前面的human作为单独的问生成json，本次作为新一轮的问答；否则，就将human作为问暂存
+            if q_or_a['from'] == 'human':
+                if conversation_start == False:
+                    question = q_or_a['value']
+                    conversation_start = True
+                    continue
+                else:
+                    # 生成json
+                    json_str = schema.ShareGPTQASchema(id, question, '', id, i).to_json()
+                    write_file.write(json_str)
+                    write_file.write('\n')
+                    question = q_or_a['value']
+                    # 对话重置且问答序号加1
+                    conversation_start = False
+                    i += 1
+                    continue
+        # 如果最后一个是human，就生成json
+        if conversation_start == True:
             # 生成json
-            json_str = schema.ShareGPTQASchema(id, question, answer, id, i+1, lang).to_json()
+            json_str = schema.ShareGPTQASchema(id, question, '', id, i).to_json()
             write_file.write(json_str)
             write_file.write('\n')
+# '''
+#     如果有问没答，保持答为空。如果只有答案没有问，直接丢弃答。
+#     注释之前的处理方式
+#         # 判断conversation的长度是否为偶数，如果是奇数，就退出
+#         if(len(conversation) % 2 != 0):
+#             return False
+#         for i in range(int(len(conversation)/2)):
+#             # 如果是第一个元素，就是问题
+#             if(conversation[i*2]['from'] != 'human'):
+#                 return False
+#             # 如果是第二个元素，就是答案
+#             if(conversation[i*2+1]['from'] != 'gpt'):
+#                 return False
+#             # 如果是第一个元素，就是问题
+#             question = conversation[i*2]['value']
+#             # 如果是第二个元素，就是答案
+#             answer = conversation[i*2+1]['value']
+#             # lang = 'not_en_or_zh'
+#             # # 确认是否英文或中文，可能带有标点符号
+#             # if re.match(r'^[a-zA-Z0-9\.\,\?\!\s]+$', question) is not None:
+#             #     lang = 'en'
+#             # elif re.match(r'^[\u4e00-\u9fa5\.\,\?\!\s]+$', question) is not None:
+#             #     lang = 'zh'
+#             # 生成json
+#             json_str = schema.ShareGPTQASchema(id, question, answer, id, i+1).to_json()
+#             write_file.write(json_str)
+#             write_file.write('\n')
+# '''
         return True
     except json.JSONDecodeError:
         print("JSONDecodeError")
         return False
 
+# 获取每一段对话，输入到json中处理
+def process_json_file_b(file_path, write_file, start_line=1):
+    with open(file_path, 'r', encoding='utf-8') as f:
+        # 定位到指定行数
+        for _ in range(start_line - 1):
+            f.readline()
+        for line_number, line in enumerate(f, start=start_line):
+            # 打印迭代信息
+            # print(f"Line {line_number}: {line}")
+            # 如果json_len大于10，就退出
+            if line_number > 10:
+                break
+            this_line = line.strip()
+            try:
+                json.loads(this_line)
+                write_file.write(this_line)
+                write_file.write('\n')
+            except json.JSONDecodeError:
+                print(f"Line {line_number}, error!")  # json检测失败
+                
 if __name__ == "__main__":
     import argparse
     parser = argparse.ArgumentParser(description="Parse shareGPT into QA data.")
     parser.add_argument("source_files",type=str, default="final_data_sample_230706test.json", help="文件名")
     parser.add_argument("-o","--output",type=str, default="shareGPT",help="output file name (without extension)")
     parser.add_argument("-l","--start_line",type=int,default=1,help="read start line")
+    parser.add_argument("-m","--model",type=str,default='a',help="multi model parse")
     args = parser.parse_args()
     with open(f'{args.output}_{datetime.now().strftime("%Y-%m-%d-%H-%M-%S")}.jsonl', 'w', encoding='utf-8') as of:
-        # 调用函数来处理 JSON 文件，默认从第1行开始读取
-        process_json_file(args.source_files, of, args.start_line)
+        if args.model == 'a':
+            # 调用函数来处理 JSON 文件，默认从第1行开始读取
+            process_json_file(args.source_files, of, args.start_line)
+        elif args.model == 'b':
+            # 调用函数来处理 JSON 文件，默认从第1行开始读取
+            process_json_file_b(args.source_files, of, args.start_line)

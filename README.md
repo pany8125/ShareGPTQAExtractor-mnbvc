@@ -32,7 +32,7 @@ python sharegpt_extract.py FILE
 
 ## 注意
 
-1. 
+1. 如果有问没答，保持答为空。如果只有答案没有问，直接丢弃答。
 
 ## 代码说明
 
