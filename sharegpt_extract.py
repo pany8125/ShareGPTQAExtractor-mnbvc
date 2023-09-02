@@ -5,13 +5,23 @@ from datetime import datetime
 import json
 from enum import Enum
 import schema
-import re
+import hashlib
+import logging
+
+# 配置日志记录
+logging.basicConfig(
+    filename='shareGTP_log_file.log',  # 指定日志文件的名称
+    level=logging.INFO,  # 指定日志级别（INFO、WARNING、ERROR、CRITICAL等）
+    format='%(asctime)s [%(levelname)s]: %(message)s',  # 日志格式
+    datefmt='%Y-%m-%d %H:%M:%S'  # 日期和时间格式
+)
 
 # 定义一个枚举类
 class Json_str(Enum):
     JSON_START = "{"
     ID = '"id":'
     CONVERSATION_START = '"conversations":'
+    CONVERSATION_ALL = '"conversations": []'
     CONVERSATION_END = ']'
     JSON_END = '},'
     JSON_END_END = '}'
@@ -32,11 +42,31 @@ def process_json_file(file_path, write_file, start_line=1):
         for line_number, line in enumerate(f, start=start_line):
             # 打印迭代信息
             # print(f"Line {line_number}: {line}")
-            # 如果json_len大于10，就退出
-            if json_len > 100:
-                print(f"Line {line_number}, json len > 100, exit!")  # json检测失败
+            # 如果json_len大于1000，就退出
+            if json_len > 1000:
+                print(f"Line {line_number}, json len > 1000, exit!")  # json检测失败
                 break
             this_line = line.strip()
+            # 最后的逻辑放到前面，避免重复判断
+            if json_str_flag == Json_str.CONVERSATION_END.value or json_str_flag == Json_str.CONVERSATION_ALL.value:
+                if this_line == Json_str.JSON_END.value or this_line == Json_str.JSON_END_END.value:
+                    print(f"Line {line_number}, json end!")  # json解析开始
+                    buffer += '}'
+                    # 重置状态
+                    json_str_flag = Json_str.NONE.value
+                    json_len = 0
+                    if process_json(buffer, write_file):
+                        buffer = ''
+                        json_len += 1
+                        continue
+                    else:
+                        print(f"Line {line_number}, error!")  # json检测失败
+                        print(f"parse stage: {json_str_flag}, json str: {buffer}")
+                        break
+                else:
+                    print(f"Line {line_number}, error!")  # json检测失败
+                    print(f"parse stage: {json_str_flag}, json str: {buffer}")
+                    break
             if json_str_flag == Json_str.NONE.value:
                 if this_line == "[":
                     print(f"Line {line_number}, start of text!")  # json检测文件开始
@@ -67,7 +97,11 @@ def process_json_file(file_path, write_file, start_line=1):
                     print(f"parse stage: {json_str_flag}, json str: {buffer}")
                     break
             if json_str_flag == Json_str.ID.value:
-                if this_line.startswith(Json_str.CONVERSATION_START.value):
+                if this_line.startswith(Json_str.CONVERSATION_ALL.value):
+                    print(f"Line {line_number}, conversations all detected!")
+                    json_str_flag = Json_str.CONVERSATION_ALL.value
+                    buffer += this_line
+                elif this_line.startswith(Json_str.CONVERSATION_START.value):
                     print(f"Line {line_number}, conversations detected!")  # json解析开始
                     json_str_flag = Json_str.CONVERSATION_START.value
                     buffer += this_line
@@ -87,23 +121,6 @@ def process_json_file(file_path, write_file, start_line=1):
                     # TODO：检测下buffer长度，以免数据异常
                     buffer += this_line
                     continue
-            if json_str_flag == Json_str.CONVERSATION_END.value:
-                if this_line == Json_str.JSON_END.value or this_line == Json_str.JSON_END_END.value:
-                    print(f"Line {line_number}, json end!")  # json解析开始
-                    json_str_flag = Json_str.NONE.value
-                    buffer += '}'
-                    if process_json(buffer, write_file):
-                        buffer = ''
-                        json_len += 1
-                        continue
-                    else:
-                        print(f"Line {line_number}, error!")  # json检测失败
-                        print(f"parse stage: {json_str_flag}, json str: {buffer}")
-                        break
-                else:
-                    print(f"Line {line_number}, error!")  # json检测失败
-                    print(f"parse stage: {json_str_flag}, json str: {buffer}")
-                    break
             # 撒分支都没走进去
             print(f"json parse error!")  # json检测失败
             print(f"Line {line_number}, error!")  # json检测失败
@@ -114,6 +131,8 @@ def process_json(json_str, write_file=None):
     try:
         json_data = json.loads(json_str)
         id = json_data['id']
+        #用json_data的md5值作为id
+        unique_id = hashlib.md5(json_str.encode('utf-8')).hexdigest()
         conversation = json_data['conversations']
         # 打印conversation的长度，并加上说明
         print(f"conversation length: {len(conversation)}")
@@ -124,7 +143,10 @@ def process_json(json_str, write_file=None):
         # 循环处理conversation中的每一个json，如果json中的from不是human或gpt，就退出
         while len(conversation) > 0:
             if conversation[0]['from'] != 'human' and conversation[0]['from'] != 'gpt':
-                return False
+                unknown_q_or_a = conversation.pop(0)
+                # 记录并继续
+                logging.error(f"unknown conversation: {unknown_q_or_a}")
+                continue
             q_or_a = conversation.pop(0)
             if q_or_a['from'] == 'gpt':
                 # 如果是gpt，且前面没有human，就丢弃
@@ -134,7 +156,7 @@ def process_json(json_str, write_file=None):
                 else:
                     answer = q_or_a['value']
                     # 生成json
-                    json_str = schema.ShareGPTQASchema(id, question, answer, id, i).to_json()
+                    json_str = schema.ShareGPTQASchema(unique_id, question, answer, id, i).to_json()
                     write_file.write(json_str)
                     write_file.write('\n')
                     # 对话重置且问答序号加1
@@ -149,7 +171,7 @@ def process_json(json_str, write_file=None):
                     continue
                 else:
                     # 生成json
-                    json_str = schema.ShareGPTQASchema(id, question, '', id, i).to_json()
+                    json_str = schema.ShareGPTQASchema(unique_id, question, '', id, i).to_json()
                     write_file.write(json_str)
                     write_file.write('\n')
                     question = q_or_a['value']
@@ -160,7 +182,7 @@ def process_json(json_str, write_file=None):
         # 如果最后一个是human，就生成json
         if conversation_start == True:
             # 生成json
-            json_str = schema.ShareGPTQASchema(id, question, '', id, i).to_json()
+            json_str = schema.ShareGPTQASchema(unique_id, question, '', id, i).to_json()
             write_file.write(json_str)
             write_file.write('\n')
 # '''
@@ -187,7 +209,7 @@ def process_json(json_str, write_file=None):
 #             # elif re.match(r'^[\u4e00-\u9fa5\.\,\?\!\s]+$', question) is not None:
 #             #     lang = 'zh'
 #             # 生成json
-#             json_str = schema.ShareGPTQASchema(id, question, answer, id, i+1).to_json()
+#             json_str = schema.ShareGPTQASchema(unique_id, question, answer, id, i+1).to_json()
 #             write_file.write(json_str)
 #             write_file.write('\n')
 # '''
