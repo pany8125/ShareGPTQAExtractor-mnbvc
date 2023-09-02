@@ -2,7 +2,7 @@
 
 ## 项目描述
 
-- 本项目主要目的是从Trello上分享的ShareGPT语料链接中抽取中文/英文问答数据。一共3个语料：
+- 本项目主要目的是从Trello上分享的ShareGPT语料链接中抽取中文/英文问答数据。一共4个语料：
 1. https://huggingface.co/datasets/cryscan/multilingual-share
 2. https://huggingface.co/datasets/anon8231489123/ShareGPT_Vicuna_unfiltered
 3. https://huggingface.co/datasets/Ejafa/GPT_4_with_ShareGPT/tree/main
@@ -33,11 +33,12 @@ python sharegpt_extract.py FILE
 ## 注意
 
 1. 如果有问没答，保持答为空。如果只有答案没有问，直接丢弃答。
+2. 对于每一个对话，会使用json串的md5作为唯一标识id
 
 ## 代码说明
 
 - `sharegpt_extract.py` 入口程序
-- `sharegpt_parser.py` ShareGPT解析器
+- `schema.py` 输出json模板
 
 
 ## 输出jsonl文件格式
@@ -46,7 +47,7 @@ python sharegpt_extract.py FILE
 2. 对于每一个问答数据，其最高层次结构如下。
 ```json
 {
-    "id":123456,
+    "id":"82b2834abe2ed41a26b6b06317114f8f",
     "问":"写一个超短小说",
     "答":"他们相遇，又别离。岁月如梭，情感却不减。",
     "来源":"ShareGPT",
@@ -97,7 +98,7 @@ python sharegpt_extract.py FILE
 
 ```json
 {
-    "id": 0,
+    "id": "82b2834abe2ed41a26b6b06317114f8f",
     "问": "Can you make me a Shakespearean script about a girl who has tummy troubles and can\u2019t fart not matter how hard she tries- so they think she is a witch",
     "答": "Sure, here's a Shakespearean script about a girl who c...",
     "来源": "ShareGPT",
@@ -112,7 +113,7 @@ python sharegpt_extract.py FILE
     }
 }
 {
-    "id": 1,
+    "id": "82b2834abe2ed41a26bbbbbbbbbbbbbbbb",
     "问": "Can you change Mary\u2019s name to Katy",
     "答": "Certainly! Here's the revised script:\n\nAct I, Scene I\n\nEnter KATY,...",
     "来源": "ShareGPT",
@@ -130,8 +131,8 @@ python sharegpt_extract.py FILE
 
 **补充说明：上面的格式方便查看，最终输出到文件仍然为jsonl的规范，如下：**
 ```json
-{"id": 0, "问": "Can you make me a ...", "答": "Sure...", "来源": "ShareGPT", "元数据": {"create_time": "20230517 10:41:58",...}}
-{"id": 0, "问": "Can you make me a ...", "答": "Sure...", "来源": "ShareGPT", "元数据": {"create_time": "20230517 10:41:58",...}}
+{"id": "82b...", "问": "Can you make me a ...", "答": "Sure...", "来源": "ShareGPT", "元数据": {"create_time": "20230517 10:41:58",...}}
+{"id": "82b...", "问": "Can you make me a ...", "答": "Sure...", "来源": "ShareGPT", "元数据": {"create_time": "20230517 10:41:58",...}}
 ```
 
 ## 相关项目
