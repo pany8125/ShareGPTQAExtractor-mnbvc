@@ -324,3 +324,4 @@ if __name__ == "__main__":
         elif args.model == 'common':
             # 调用函数来处理 JSON 文件，默认从第1行开始读取
             process_json_file_common(args.source_files, of, args.start_line)
+            # TODO：添加不同类型格式的方法适配 230914
