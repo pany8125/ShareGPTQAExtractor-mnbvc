@@ -31,7 +31,7 @@ class Json_str(Enum):
 # file_path_all = 'final_data_sample_230706test.json'  # 替换为实际文件路径
 
 # 获取每一段对话，输入到json中处理
-def process_json_file_gpt4(file_path, write_file, start_line=1):
+def process_json_file_gpt4(file_path, write_file, start_line=1, model='gpt4'):
     with open(file_path, 'r', encoding='utf-8') as f:
         # 定位到指定行数
         for _ in range(start_line - 1):
@@ -55,7 +55,7 @@ def process_json_file_gpt4(file_path, write_file, start_line=1):
                     # 重置状态
                     json_str_flag = Json_str.NONE.value
                     json_len = 0
-                    if process_json_gpt4(buffer, write_file):
+                    if process_json_gpt4(buffer, write_file, model):
                         buffer = ''
                         json_len += 1
                         continue
@@ -126,7 +126,7 @@ def process_json_file_gpt4(file_path, write_file, start_line=1):
             print(f"Line {line_number}, error!")  # json检测失败
             print(f"parse stage: {json_str_flag}, json str: {buffer}")
 
-def process_json_gpt4(json_str, write_file=None):
+def process_json_gpt4(json_str, write_file=None, model='gpt4'):
     # Check if str is a valid JSON
     try:
         json_data = json.loads(json_str)
@@ -135,6 +135,7 @@ def process_json_gpt4(json_str, write_file=None):
         unique_id = hashlib.md5(json_str.encode('utf-8')).hexdigest()
         question_detail = "\"from\": \"human\""
         answer_detail = "\"from\": \"gpt\""
+        other_field = ''
         conversation = json_data['conversations']
         # 打印conversation的长度，并加上说明
         print(f"conversation length: {len(conversation)}")
@@ -158,7 +159,7 @@ def process_json_gpt4(json_str, write_file=None):
                 else:
                     answer = q_or_a['value']
                     # 生成json
-                    json_str = schema.ShareGPTQASchema(unique_id, question, answer, question_detail, answer_detail, id, i).to_json()
+                    json_str = schema.ShareGPTQASchema(unique_id, question, answer, question_detail, answer_detail, id, i, model, other_field).to_json()
                     write_file.write(json_str)
                     write_file.write('\n')
                     # 对话重置且问答序号加1
@@ -173,7 +174,7 @@ def process_json_gpt4(json_str, write_file=None):
                     continue
                 else:
                     # 生成json
-                    json_str = schema.ShareGPTQASchema(unique_id, question, '', id, i).to_json()
+                    json_str = schema.ShareGPTQASchema(unique_id, question, '', question_detail, answer_detail, id, i, model, other_field).to_json()
                     write_file.write(json_str)
                     write_file.write('\n')
                     question = q_or_a['value']
@@ -319,7 +320,7 @@ if __name__ == "__main__":
     with open(f'{args.output}_{args.model}_{datetime.now().strftime("%Y-%m-%d-%H-%M-%S")}.jsonl', 'w', encoding='utf-8') as of:
         if args.model == 'vicuna' or args.model == 'gpt4':
             # 调用函数来处理 JSON 文件，默认从第1行开始读取
-            process_json_file_gpt4(args.source_files, of, args.start_line)
+            process_json_file_gpt4(args.source_files, of, args.start_line, args.model)
         elif args.model == 'multilang':
             # 调用函数来处理 JSON 文件，默认从第1行开始读取
             process_json_file_multilang(args.source_files, of, args.start_line)

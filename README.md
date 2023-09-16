@@ -1,55 +1,42 @@
 # ShareGPTQAExtractor-mnbvc
 
-<!--ts-->
-* [项目描述](#项目描述)
-* [项目](#环境)
-<!--te-->
 
-## 项目描述
+<!-- @import "[TOC]" {cmd="toc" depthFrom=1 depthTo=6 orderedList=false} -->
+
+<!-- code_chunk_output -->
+
+- [ShareGPTQAExtractor-mnbvc](#sharegptqaextractor-mnbvc)
+  - [项目需求描述](#项目需求描述)
+    - [原始数据集](#原始数据集)
+    - [标准化需求说明](#标准化需求说明)
+  - [使用方式](#使用方式)
+    - [环境准备](#环境准备)
+    - [运行方式](#运行方式)
+    - [代码说明](#代码说明)
+  - [文件示例](#文件示例)
+    - [原始文件示例（以[Ejafa/GPT_4_with_ShareGPT]格式文件为例）](#原始文件示例以ejafagpt_4_with_sharegpt格式文件为例)
+    - [结果示例](#结果示例)
+    - [补充说明](#补充说明)
+  - [相关项目](#相关项目)
+
+<!-- /code_chunk_output -->
+
+
+
+## 项目需求描述
+
+###原始数据集
 
 - 本项目主要目的是从Trello上分享的ShareGPT语料链接中抽取中文/英文问答数据。一共4个语料：
-1. https://huggingface.co/datasets/cryscan/multilingual-share
-2. https://huggingface.co/datasets/anon8231489123/ShareGPT_Vicuna_unfiltered
-3. https://huggingface.co/datasets/Ejafa/GPT_4_with_ShareGPT/tree/main
-4. https://huggingface.co/datasets/shareAI/ShareGPT-Chinese-English-90k/tree/main/sharegpt_jsonl
-- 处理结果为jsonl文件，每行对应一对问答，包含问答文本，以及同一会话下多轮问答的唯一标识和序号，详细格式附后。
+1. [scryscan/multilingual-share](https://huggingface.co/datasets/cryscan/multilingual-share)
+2. [anon8231489123/ShareGPT_Vicuna_unfiltered](https://huggingface.co/datasets/anon8231489123/ShareGPT_Vicuna_unfiltered)
+3. [Ejafa/GPT_4_with_ShareGPT](https://huggingface.co/datasets/Ejafa/GPT_4_with_ShareGPT/tree/main)
+4. [shareAI/ShareGPT-Chinese-English-90k](https://huggingface.co/datasets/shareAI/ShareGPT-Chinese-English-90k/tree/main/sharegpt_jsonl)
 
-## 环境
+###标准化需求说明
 
-1. 下载本项目
-```
-git clone ShareGPTQAExtractor-mnbvc
-```
-2. 进入目录并安装依赖
-```
-cd ShareGPTQAExtractor-mnbvc
-pip install -r requirements.txt
-```
-
-## 用法
-
-通过以下命令将FILE文件转化并输出到以`ShareGPT`为名称的结果文件中。
-```shell
-python sharegpt_extract.py FILE
-```
-
-以上命令将输出时间戳结果文件例子`shareGPT_2023-07-17-00-30-43.jsonl`。
-
-## 注意
-
-1. 如果有问没答，保持答为空。如果只有答案没有问，直接丢弃答。
-2. 对于每一个对话，会使用json串的md5作为唯一标识id
-
-## 代码说明
-
-- `sharegpt_extract.py` 入口程序
-- `schema.py` 输出json模板
-
-
-## 输出jsonl文件格式
-
-1. 每个jsonl文件，其大小略大于500MB。每行是一条问答数据，对应ShareGPT一个会话（即**conversations**，下同）中的一个问答。
-2. 对于每一个问答数据，其最高层次结构如下。
+- 将不同格式的原始数据集，统一处理为标准格式的jsonl文件，每行对应一对问答，包含问答文本，以及同一会话下多轮问答的唯一标识和序号，详细格式附后。
+- 对于每一个问答数据，其最高层次结构如下。
 ```json
 {
     "id":"82b2834abe2ed41a26b6b06317114f8f",
@@ -60,20 +47,79 @@ python sharegpt_extract.py FILE
         "create_time":"20230511 15:56:03",
         "问题明细":"\"from\": \"human\"",
         "回答明细":"\"from\": \"gpt\"",
-        "扩展字段":""
+        "扩展字段":"{\"会话\": 1, \"多轮序号\": 1, \"解析模型\": gpt4}"
     }
 }
 ```
-3. 在ShareGPT语料中，`"扩展字段"`一共两个字段，会话的唯一标识和本条在会话中的序号，示例如下：
-```json
-    {
-    "会话": "yOKd88p",
-    "多轮序号": 1
-    }
+- jsonl文件中每一行的json基本KV说明
+
+| KEY  | VALUE说明 |
+| ------ | ---- |
+|id   | 每一对问答的唯一标识，使用json串的md5作为唯一标识id |
+|问   | 问的文本 |
+|答   | 答的文本 |
+|来源   | 固定为'ShareGPT' |
+|元数据   | 包含创建时间、问题明细、回答明细、扩展字段 |
+
+- 元数据中每一项的KV说明
+
+| KEY  | VALUE说明 |
+| ------ | ---- |
+|create_time   | 问答创建时间，格式为`%Y%m%d %H:%M:%S` |
+|问题明细   | 原始语料中问的来源，例如 "from": "human" |
+|回答明细   | 原始语料中答的来源，例如 "from": "gpt" |
+|扩展字段   | 包含会话的唯一标识和本条在会话中的序号，以及解析模型 |
+
+- 扩展字段中每一项的KV说明
+
+| KEY  | VALUE说明 |
+| ------ | ---- |
+|会话   | 会话的唯一标识，例如 "会话": "yOKd88p" |
+|多轮序号   | 本条在会话中的序号，例如 "多轮序号": 1 |
+|解析模型   | 用于标识原始语料的来源，例如 "解析模型": "gpt4" |
+|其他。。等等   | 语料中问答相关的其他补充信息字段 |
+
+- 注意：**如果有问没答，保持答为空。如果只有答案没有问，直接丢弃答。**
+
+## 使用方式
+
+### 环境准备
+
+1. 下载本项目
+```shell
+git clone ShareGPTQAExtractor-mnbvc
+```
+2. 进入目录并安装依赖
+```shell
+cd ShareGPTQAExtractor-mnbvc
+pip install -r requirements.txt
 ```
 
+### 运行方式
 
-## 原始文件示例
+通过以下命令将FILE文件转化并输出到以`ShareGPT`为开头的结果文件中。
+```shell
+python sharegpt_extract.py FILE -m MODEL
+```
+
+以上命令将输出时间戳结果文件例子`shareGPT_gpt4_2023-09-17-00-21-06.jsonl`。
+模型和原始语料的对应关系如下：
+
+| MODEL  | 对应原始语料 |
+| ------ | ---- |
+|multilang   | [scryscan/multilingual-share](https://huggingface.co/datasets/cryscan/multilingual-share) |
+| vicuna   | [anon8231489123/ShareGPT_Vicuna_unfiltered](https://huggingface.co/datasets/anon8231489123/ShareGPT_Vicuna_unfiltered)         |
+| gpt4   | [Ejafa/GPT_4_with_ShareGPT](https://huggingface.co/datasets/Ejafa/GPT_4_with_ShareGPT/tree/main)       |
+| common   | [shareAI/ShareGPT-Chinese-English-90k](https://huggingface.co/datasets/shareAI/ShareGPT-Chinese-English-90k/tree/main/sharegpt_jsonl)      |
+
+### 代码说明
+
+- `sharegpt_extract.py` 入口程序
+- `schema.py` 输出json模板
+
+##文件示例
+
+### 原始文件示例（以[Ejafa/GPT_4_with_ShareGPT]格式文件为例）
 
 ```json
   {
@@ -99,7 +145,7 @@ python sharegpt_extract.py FILE
   }
 ```
 
-## 结果示例
+### 结果示例
 
 ```json
 {
@@ -113,7 +159,8 @@ python sharegpt_extract.py FILE
         "回答明细":"\"from\": \"gpt\"",
         "扩展字段": {
                     "会话": "yOKd88p",
-                    "多轮序号": 1
+                    "多轮序号": 1,
+                    "解析模型": "gpt4"
                     }
     }
 }
@@ -128,13 +175,15 @@ python sharegpt_extract.py FILE
         "回答明细":"\"from\": \"gpt\"",
         "扩展字段": {
                     "会话": "yOKd88p",
-                    "多轮序号": 2
+                    "多轮序号": 2,
+                    "解析模型": "gpt4"
                     }
     }
 },
 ```
+###补充说明
 
-**补充说明：上面的格式方便查看，最终输出到文件仍然为jsonl的规范，如下：**
+**上面的格式方便查看，最终输出到文件仍然为jsonl的规范，如下：**
 ```json
 {"id": "82b...", "问": "Can you make me a ...", "答": "Sure...", "来源": "ShareGPT", "元数据": {"create_time": "20230517 10:41:58",...}}
 {"id": "82b...", "问": "Can you make me a ...", "答": "Sure...", "来源": "ShareGPT", "元数据": {"create_time": "20230517 10:41:58",...}}

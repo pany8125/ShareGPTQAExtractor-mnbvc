@@ -3,7 +3,7 @@ from datetime import datetime
 
 class ShareGPTQASchema:
 
-    def __init__(self, id, question, answer, question_detail, answer_detail, session, round_number, other_field):
+    def __init__(self, id, question, answer, question_detail, answer_detail, session, round_number, model, other_field):
         self.id = id
         self.question = question
         self.answer = answer
@@ -12,7 +12,7 @@ class ShareGPTQASchema:
         self.question_detail = question_detail 
         self.answer_detail = answer_detail 
         # 扩展字段
-        self.extended_field = "{\"会话\": " + session + ", \"多轮序号\": " + str(round_number) + other_field + "}"
+        self.extended_field = "{\"会话\": " + session + ", \"多轮序号\": " + str(round_number) + ", \"解析模型\": " + model + other_field + "}"
 
     def to_json(self):
         data = {
@@ -32,8 +32,15 @@ class ShareGPTQASchema:
         return json.dumps(data, separators=(",", ":"), ensure_ascii=False)
 
 
-json_str = ShareGPTQASchema(0, "Can you make me a Shakespearean script about a girl who has tummy troubles and can't fart not matter how hard she tries- so they think she is a witch",
-                "Sure, here's a Shakespearean script about a girl who c...", "ShareGPT", 1).to_json()
+# json_str = ShareGPTQASchema(0, "Can you make me a Shakespearean script about a girl who has tummy troubles and can't fart not matter how hard she tries- so they think she is a witch",
+#                 "Sure, here's a Shakespearean script about a girl who c...", "ShareGPT", 1).to_json()
 # print(json_str)
-gpt4_json_str = ShareGPTQASchema(unique_id, question, '', id, i).to_json()
+unique_id = 0
+question = 'aaa'
+i = 5
+question_detail = "\"from\": \"human\""
+answer_detail = "\"from\": \"gpt\""
+id = 'aaa'
+model = 'gpt4'
+gpt4_json_str = ShareGPTQASchema(unique_id, question, '', question_detail, answer_detail, id, i, model, '').to_json()
 print(gpt4_json_str)
