@@ -185,37 +185,9 @@ def process_json_gpt4(json_str, write_file=None, model='gpt4'):
         # 如果最后一个是human，就生成json
         if conversation_start == True:
             # 生成json
-            json_str = schema.ShareGPTQASchema(unique_id, question, '', id, i).to_json()
+            json_str = schema.ShareGPTQASchema(unique_id, question, '', question_detail, answer_detail, id, i, model, other_field).to_json()
             write_file.write(json_str)
             write_file.write('\n')
-# '''
-#     如果有问没答，保持答为空。如果只有答案没有问，直接丢弃答。
-#     注释之前的处理方式
-#         # 判断conversation的长度是否为偶数，如果是奇数，就退出
-#         if(len(conversation) % 2 != 0):
-#             return False
-#         for i in range(int(len(conversation)/2)):
-#             # 如果是第一个元素，就是问题
-#             if(conversation[i*2]['from'] != 'human'):
-#                 return False
-#             # 如果是第二个元素，就是答案
-#             if(conversation[i*2+1]['from'] != 'gpt'):
-#                 return False
-#             # 如果是第一个元素，就是问题
-#             question = conversation[i*2]['value']
-#             # 如果是第二个元素，就是答案
-#             answer = conversation[i*2+1]['value']
-#             # lang = 'not_en_or_zh'
-#             # # 确认是否英文或中文，可能带有标点符号
-#             # if re.match(r'^[a-zA-Z0-9\.\,\?\!\s]+$', question) is not None:
-#             #     lang = 'en'
-#             # elif re.match(r'^[\u4e00-\u9fa5\.\,\?\!\s]+$', question) is not None:
-#             #     lang = 'zh'
-#             # 生成json
-#             json_str = schema.ShareGPTQASchema(unique_id, question, answer, id, i+1).to_json()
-#             write_file.write(json_str)
-#             write_file.write('\n')
-# '''
         return True
     except json.JSONDecodeError:
         print("JSONDecodeError")

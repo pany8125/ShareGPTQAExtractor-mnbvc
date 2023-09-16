@@ -10,6 +10,9 @@ __pycache__/
 # 过滤文件夹src_file
 src_file/
 
+# 过滤文件夹dest_file
+dest_file/
+
 # C extensions
 *.so
 
