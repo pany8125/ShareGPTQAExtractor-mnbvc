@@ -133,6 +133,8 @@ def process_json_gpt4(json_str, write_file=None):
         id = json_data['id']
         #用json_data的md5值作为id
         unique_id = hashlib.md5(json_str.encode('utf-8')).hexdigest()
+        question_detail = "\"from\": \"human\""
+        answer_detail = "\"from\": \"gpt\""
         conversation = json_data['conversations']
         # 打印conversation的长度，并加上说明
         print(f"conversation length: {len(conversation)}")
@@ -156,7 +158,7 @@ def process_json_gpt4(json_str, write_file=None):
                 else:
                     answer = q_or_a['value']
                     # 生成json
-                    json_str = schema.ShareGPTQASchema(unique_id, question, answer, id, i).to_json()
+                    json_str = schema.ShareGPTQASchema(unique_id, question, answer, question_detail, answer_detail, id, i).to_json()
                     write_file.write(json_str)
                     write_file.write('\n')
                     # 对话重置且问答序号加1
