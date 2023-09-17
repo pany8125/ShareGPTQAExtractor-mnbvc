@@ -13,6 +13,9 @@ src_file/
 # 过滤文件夹dest_file
 dest_file/
 
+# 过滤log文件夹log_file
+log_file/
+
 # C extensions
 *.so
 
