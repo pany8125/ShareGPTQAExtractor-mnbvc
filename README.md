@@ -7,12 +7,16 @@
 
 - [ShareGPTQAExtractor-mnbvc](#sharegptqaextractor-mnbvc)
   - [项目需求描述](#项目需求描述)
+    - [原始数据集](#原始数据集)
+    - [标准化需求说明](#标准化需求说明)
   - [使用方式](#使用方式)
     - [环境准备](#环境准备)
     - [运行方式](#运行方式)
     - [代码说明](#代码说明)
-    - [原始文件示例（以\[Ejafa/GPT\_4\_with\_ShareGPT\]格式文件为例）](#原始文件示例以ejafagpt_4_with_sharegpt格式文件为例)
+  - [文件示例](#文件示例)
+    - [原始文件示例（以[Ejafa/GPT_4_with_ShareGPT]格式文件为例）](#原始文件示例以ejafagpt_4_with_sharegpt格式文件为例)
     - [结果示例](#结果示例)
+    - [补充说明](#补充说明)
   - [相关项目](#相关项目)
 
 <!-- /code_chunk_output -->
