@@ -43,4 +43,4 @@ answer_detail = "\"from\": \"gpt\""
 id = 'aaa'
 model = 'gpt4'
 gpt4_json_str = ShareGPTQASchema(unique_id, question, '', question_detail, answer_detail, id, i, model, '').to_json()
-print(gpt4_json_str)
+# print(gpt4_json_str)

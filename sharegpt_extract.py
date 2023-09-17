@@ -41,16 +41,16 @@ def process_json_file_gpt4(file_path, write_file, start_line=1, model='gpt4'):
         json_str_flag = Json_str.NONE.value # 检测到json串时修改为对应状态，检测完成修改回NONE
         for line_number, line in enumerate(f, start=start_line):
             # 打印迭代信息
-            # print(f"Line {line_number}: {line}")
+            logging.debug(f"Line {line_number}: {line}")
             # 如果json_len大于1000，就退出
             if json_len > 1000:
-                print(f"Line {line_number}, json len > 1000, exit!")  # json检测失败
+                logging.error(f"Line {line_number}, json len > 1000, exit!")  # json检测失败
                 break
             this_line = line.strip()
             # 最后的逻辑放到前面，避免重复判断
             if json_str_flag == Json_str.CONVERSATION_END.value or json_str_flag == Json_str.CONVERSATION_ALL.value:
                 if this_line == Json_str.JSON_END.value or this_line == Json_str.JSON_END_END.value:
-                    print(f"Line {line_number}, json end!")  # json解析开始
+                    logging.debug(f"Line {line_number}, json end!")  # json解析开始
                     buffer += '}'
                     # 重置状态
                     json_str_flag = Json_str.NONE.value
@@ -60,71 +60,71 @@ def process_json_file_gpt4(file_path, write_file, start_line=1, model='gpt4'):
                         json_len += 1
                         continue
                     else:
-                        print(f"Line {line_number}, error!")  # json检测失败
-                        print(f"parse stage: {json_str_flag}, json str: {buffer}")
+                        logging.error(f"Line {line_number}, error!")  # json检测失败
+                        logging.error(f"parse stage: {json_str_flag}, json str: {buffer}")
                         break
                 else:
-                    print(f"Line {line_number}, error!")  # json检测失败
-                    print(f"parse stage: {json_str_flag}, json str: {buffer}")
+                    logging.error(f"Line {line_number}, error!")  # json检测失败
+                    logging.error(f"parse stage: {json_str_flag}, json str: {buffer}")
                     break
             if json_str_flag == Json_str.NONE.value:
                 if this_line == "[":
-                    print(f"Line {line_number}, start of text!")  # json检测文件开始
+                    logging.debug(f"Line {line_number}, start of text!")  # json检测文件开始
                     continue
                 elif this_line == "]":
-                    print(f"Line {line_number}, end of text!")  # json检测还没开始就到末尾了
+                    logging.debug(f"Line {line_number}, end of text!")  # json检测还没开始就到末尾了
                     break 
                 elif this_line != "{":
-                    print(f"Line {line_number}, error!")  # json检测失败
+                    logging.error(f"Line {line_number}, error!")  # json检测失败
                     break
                 elif this_line == Json_str.JSON_START.value:
-                    print(f"Line {line_number}, start parsing json!")  # json解析开始
+                    logging.debug(f"Line {line_number}, start parsing json!")  # json解析开始
                     json_str_flag = Json_str.JSON_START.value
                     buffer += this_line
                     continue
                 else:
-                    print(f"Line {line_number}, error!")  # json检测失败
-                    print(f"parse stage: {json_str_flag}, json str: {buffer}")
+                    logging.error(f"Line {line_number}, error!")  # json检测失败
+                    logging.error(f"parse stage: {json_str_flag}, json str: {buffer}")
                     break
             if json_str_flag == Json_str.JSON_START.value:
                 if this_line.startswith(Json_str.ID.value):
-                    print(f"Line {line_number}, id detected!")  # json解析开始
+                    logging.debug(f"Line {line_number}, id detected!")  # json解析开始
                     json_str_flag = Json_str.ID.value
                     buffer += this_line
                     continue
                 else:
-                    print(f"Line {line_number}, error!")  # json检测失败
-                    print(f"parse stage: {json_str_flag}, json str: {buffer}")
+                    logging.error(f"Line {line_number}, error!")  # json检测失败
+                    logging.error(f"parse stage: {json_str_flag}, json str: {buffer}")
                     break
             if json_str_flag == Json_str.ID.value:
                 if this_line.startswith(Json_str.CONVERSATION_ALL.value):
-                    print(f"Line {line_number}, conversations all detected!")
+                    logging.debug(f"Line {line_number}, conversations all detected!")
                     json_str_flag = Json_str.CONVERSATION_ALL.value
                     buffer += this_line
                 elif this_line.startswith(Json_str.CONVERSATION_START.value):
-                    print(f"Line {line_number}, conversations detected!")  # json解析开始
+                    logging.debug(f"Line {line_number}, conversations detected!")  # json解析开始
                     json_str_flag = Json_str.CONVERSATION_START.value
                     buffer += this_line
                     continue
                 else:
-                    print(f"Line {line_number}, error!")  # json检测失败
-                    print(f"parse stage: {json_str_flag}, json str: {buffer}")
+                    logging.error(f"Line {line_number}, error!")  # json检测失败
+                    logging.error(f"parse stage: {json_str_flag}, json str: {buffer}")
                     break
             if json_str_flag == Json_str.CONVERSATION_START.value:
                 if this_line == Json_str.CONVERSATION_END.value:
-                    print(f"Line {line_number}, conversations end!")  
+                    logging.debug(f"Line {line_number}, conversations end!")  
                     json_str_flag = Json_str.CONVERSATION_END.value
                     buffer += this_line
                     continue
                 else:
-                    print(f"Line {line_number}, conversations parsing!")
+                    logging.debug(f"Line {line_number}, conversations parsing!")
                     # TODO：检测下buffer长度，以免数据异常
                     buffer += this_line
                     continue
             # 撒分支都没走进去
-            print(f"json parse error!")  # json检测失败
-            print(f"Line {line_number}, error!")  # json检测失败
-            print(f"parse stage: {json_str_flag}, json str: {buffer}")
+            logging.error(f"json parse error!")  # json检测失败
+            logging.error(f"Line {line_number}, error!")  # json检测失败
+            logging.error(f"parse stage: {json_str_flag}, json str: {buffer}")
 
 def process_json_gpt4(json_str, write_file=None, model='gpt4'):
     # Check if str is a valid JSON
@@ -138,7 +138,7 @@ def process_json_gpt4(json_str, write_file=None, model='gpt4'):
         other_field = ''
         conversation = json_data['conversations']
         # 打印conversation的长度，并加上说明
-        print(f"conversation length: {len(conversation)}")
+        logging.debug(f"conversation length: {len(conversation)}")
         # 标识conversation中的对话数以及开始标记
         i = 1
         conversation_start = False
@@ -190,7 +190,7 @@ def process_json_gpt4(json_str, write_file=None, model='gpt4'):
             write_file.write('\n')
         return True
     except json.JSONDecodeError:
-        print("JSONDecodeError")
+        logging.error("JSONDecodeError")
         return False
 
 # 获取每一段对话，输入到json中处理
@@ -276,6 +276,68 @@ def process_json_multilang(json_str, write_file=None):
         return False
 
 
+# 获取每一段对话，输入到json中处理
+def process_json_file_common(file_path, write_file, start_line=1, model='common_en'):
+    with open(file_path, 'r', encoding='utf-8') as f:
+        # 定位到指定行数
+        for _ in range(start_line - 1):
+            f.readline()
+        for line_number, line in enumerate(f, start=start_line):
+            # 打印迭代信息
+            logging.debug(f"Line {line_number}: {line}")
+            this_line = line.strip()
+            if process_json_common(this_line, write_file, model):
+                this_line = ''
+                continue
+            else:
+                logging.error("common json parse error!")
+                logging.error(f"Line {line_number}, error!")  # json检测失败
+                logging.error(f"json str: {this_line}")
+                break
+
+
+def process_json_common(json_str, write_file=None, model='common_en'):
+    # Check if str is a valid JSON
+    try:
+        json_data = json.loads(json_str)
+        id = json_data['conversation_id']
+        #用json_data的md5值作为id
+        unique_id = hashlib.md5(json_str.encode('utf-8')).hexdigest()
+        question_detail = "\"from\": \"human\""
+        answer_detail = "\"from\": \"assistant\""
+        other_field = ", \"category\": \""+ json_data['category'] +"\""
+        conversation = json_data['conversation']
+        # 打印conversation的长度，并加上说明
+        logging.debug(f"conversation length: {len(conversation)}")
+        # 标识conversation中的对话数以及开始标记
+        i = 1
+        question = ''
+        # 循环处理conversation中的每一个json，json在conversation中序号+1就是该轮对话的序号
+        while len(conversation) > 0:
+            # 判断conversation中的human是否为null或者是空字符串
+            if conversation[0]['human'] == None or conversation[0]['human'] == '':
+                unknown_q_or_a = conversation.pop(0)
+                # 记录并继续
+                logging.error(f"unknown conversation: {unknown_q_or_a}")
+                continue
+            q_or_a = conversation.pop(0)
+            question = q_or_a['human']
+            # 如果assistant不是null或者是空字符串，就生成json
+            if q_or_a['assistant'] != None and q_or_a['assistant'] != '':
+                answer = q_or_a['assistant']
+            else:
+                answer = ''
+            # 生成json
+            json_str = schema.ShareGPTQASchema(unique_id, question, answer, question_detail, answer_detail, id, i, model, other_field).to_json()
+            write_file.write(json_str)
+            write_file.write('\n')
+            # 问答序号加1
+            i += 1
+        return True
+    except json.JSONDecodeError:
+        logging.error("JSONDecodeError")
+        return False
+
 if __name__ == "__main__":
     import argparse
     parser = argparse.ArgumentParser(description="Parse shareGPT into QA data.")
@@ -297,6 +359,8 @@ if __name__ == "__main__":
             # 调用函数来处理 JSON 文件，默认从第1行开始读取
             process_json_file_multilang(args.source_files, of, args.start_line)
         elif args.model == 'common_en' or args.model == 'common_zh':
+            logging.info(f"model: {args.model}")
             # 调用函数来处理 JSON 文件，默认从第1行开始读取
-            process_json_file_common(args.source_files, of, args.start_line)
-            # TODO：添加不同类型格式的方法适配 230914
+            process_json_file_common(args.source_files, of, args.start_line, args.model)
+        else:
+            logging.error(f"model: {args.model} not support!")
