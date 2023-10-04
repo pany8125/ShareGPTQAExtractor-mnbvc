@@ -23,7 +23,7 @@
 
 ###原始数据集
 
-- 本项目主要目的是从Trello上分享的ShareGPT语料链接中抽取中文/英文问答数据。一共4个语料：
+- 本项目主要目的是从Trello上分享的ShareGPT语料链接中抽取中文/英文问答数据。一共5个语料：
 1. [scryscan/multilingual-share](https://huggingface.co/datasets/cryscan/multilingual-share)
 2. [anon8231489123/ShareGPT_Vicuna_unfiltered](https://huggingface.co/datasets/anon8231489123/ShareGPT_Vicuna_unfiltered)
 3. [Ejafa/GPT_4_with_ShareGPT](https://huggingface.co/datasets/Ejafa/GPT_4_with_ShareGPT/tree/main)
