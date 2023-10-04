@@ -429,30 +429,88 @@ def process_json_common(json_str, write_file=None, model='common_en'):
         logging.error("JSONDecodeError")
         return False
 
+# 获取每一段对话，输入到json中处理
+def process_json_file_baiduzhidao(file_path, write_file, start_line=1, model='common_en', cur_time='', max_size=500 * 1024 * 1024, output='shareGPT'):
+    # 文件序号
+    file_number = 1
+    write_file = open(f'{args.output}_{args.model}_{cur_time}_{file_number:02}.jsonl', 'w', encoding='utf-8')
+    with open(file_path, 'r', encoding='utf-8') as f:
+        # 定位到指定行数
+        for _ in range(start_line - 1):
+            f.readline()
+        for line_number, line in enumerate(f, start=start_line):
+            # 打印迭代信息
+            logging.debug(f"Line {line_number}: {line}")
+            this_line = line.strip()
+            if process_json_baiduzhidao(this_line, write_file, model):
+                this_line = ''
+            else:
+                logging.error("common json parse error!")
+                logging.error(f"Line {line_number}, error!")  # json检测失败
+                logging.error(f"json str: {this_line}")
+                break
+            # 如果文件超过500M，就关闭文件，新建文件
+            if write_file.tell() > max_size:
+                write_file.close()
+                file_number += 1
+                write_file = open(f'{args.output}_{args.model}_{cur_time}_{file_number:02}.jsonl', 'w', encoding='utf-8')
+
+def process_json_baiduzhidao(json_str, write_file=None, model='common_en'):
+    # Check if str is a valid JSON
+    try:
+        json_data = json.loads(json_str)
+        #用json_data的md5值作为id
+        unique_id = hashlib.md5(json_str.encode('utf-8')).hexdigest()
+        question_detail = "\"input\""
+        answer_detail = "\"output\""
+        question = json_data['input']
+        answer = json_data['output']
+        json_schema = schema.ShareGPTQASchema(unique_id, question, answer, question_detail, answer_detail, '', 1, model, '')
+        # 生成json
+        json_str = json_schema.to_json()
+        write_file.write(json_str)
+        write_file.write('\n')
+        return True
+    except json.JSONDecodeError:
+        logging.error("JSONDecodeError")
+        return False
+    except KeyError:
+        logging.error("KeyError")
+        return False
+
 if __name__ == "__main__":
     import argparse
     parser = argparse.ArgumentParser(description="Parse shareGPT into QA data.")
     parser.add_argument("source_files",type=str, default="final_data_sample_230706test.json", help="文件名")
     parser.add_argument("-o","--output",type=str, default="shareGPT",help="output file name (without extension)")
     parser.add_argument("-l","--start_line",type=int,default=1,help="read start line")
+    parser.add_argument("-s","--max_size",type=int,default=500 * 1024 * 1024,help="max chunk size")
     # model：
     #   gpt4：https://huggingface.co/datasets/Ejafa/GPT_4_with_ShareGPT/tree/main
     #   common：https://huggingface.co/datasets/shareAI/ShareGPT-Chinese-English-90k/tree/main/sharegpt_jsonl
     #   multilang：https://huggingface.co/datasets/cryscan/multilingual-share/tree/main
     #   vicuna：https://huggingface.co/datasets/anon8231489123/ShareGPT_Vicuna_unfiltered/tree/main
+    #   baiduzhidao：baiduzhidao-train.jsonl
     parser.add_argument("-m","--model",type=str,default='gpt4',help="multi model parse")
     args = parser.parse_args()
-    with open(f'{args.output}_{args.model}_{datetime.now().strftime("%Y-%m-%d-%H-%M-%S")}.jsonl', 'w', encoding='utf-8') as of:
-        if args.model == 'vicuna' or args.model == 'gpt4':
-            # 调用函数来处理 JSON 文件，默认从第1行开始读取
-            process_json_file_gpt4(args.source_files, of, args.start_line, args.model)
-        elif args.model == 'multilang':
-            logging.info(f"model: {args.model}")
-            # 调用函数来处理 JSON 文件，默认从第1行开始读取
-            process_json_file_multilang(args.source_files, of, args.start_line)
-        elif args.model == 'common_en' or args.model == 'common_zh':
-            logging.info(f"model: {args.model}")
-            # 调用函数来处理 JSON 文件，默认从第1行开始读取
-            process_json_file_common(args.source_files, of, args.start_line, args.model)
-        else:
-            logging.error(f"model: {args.model} not support!")
+    # 当前时间
+    cur_time = datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
+    of = open(f'{args.output}_{args.model}_{cur_time}.jsonl', 'w', encoding='utf-8')
+    if args.model == 'vicuna' or args.model == 'gpt4':
+        # 调用函数来处理 JSON 文件，默认从第1行开始读取
+        process_json_file_gpt4(args.source_files, of, args.start_line, args.model)
+    elif args.model == 'multilang':
+        logging.info(f"model: {args.model}")
+        # 调用函数来处理 JSON 文件，默认从第1行开始读取
+        process_json_file_multilang(args.source_files, of, args.start_line)
+    elif args.model == 'common_en' or args.model == 'common_zh':
+        logging.info(f"model: {args.model}")
+        # 调用函数来处理 JSON 文件，默认从第1行开始读取
+        process_json_file_common(args.source_files, of, args.start_line, args.model)
+    elif args.model == 'baiduzhidao':
+        logging.info(f"model: {args.model}")
+        # 调用函数来处理 JSON 文件，默认从第1行开始读取
+        process_json_file_baiduzhidao(args.source_files, of, args.start_line, args.model, cur_time, args.max_size, args.output)
+    else:
+        logging.error(f"model: {args.model} not support!")
+    of.close()
